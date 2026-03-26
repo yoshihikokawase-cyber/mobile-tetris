@@ -13,10 +13,25 @@ mobile-tetris/
 ├── script.js             # ゲームロジック完全版
 ├── playwright.config.js  # Playwright 設定
 ├── package.json          # npm スクリプト
+├── .gitignore            # Git除外設定
 ├── tests/
 │   └── tetris.spec.js    # E2E テスト
 └── README.md             # このファイル
 ```
+
+---
+
+## Deploy (Vercel)
+
+1. GitHub にリポジトリを push する
+2. [vercel.com](https://vercel.com) でプロジェクトを Import
+3. 設定:
+   - **Framework Preset**: `Other`
+   - **Build Command**: *(空欄のまま)*
+   - **Output Directory**: *(空欄のまま / ルートを配信)*
+4. `Deploy` をクリック
+
+> 静的ファイル（HTML / CSS / JS）のみで動作するため、ビルド不要です。
 
 ---
 
