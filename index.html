@@ -14,8 +14,8 @@
     <header id="header">
       <h1>TETRIS</h1>
       <div id="header-controls">
-        <button id="btn-pause" class="ctrl-btn" aria-label="Pause">⏸</button>
-        <button id="btn-restart" class="ctrl-btn" aria-label="Restart">🔄</button>
+        <button id="btn-pause" class="ctrl-btn" aria-label="Pause" data-testid="pause-button">⏸</button>
+        <button id="btn-restart" class="ctrl-btn" aria-label="Restart" data-testid="restart-button">🔄</button>
       </div>
     </header>
 
@@ -25,11 +25,11 @@
       <aside id="side-panel">
         <div class="panel-box" id="score-box">
           <div class="panel-label">SCORE</div>
-          <div class="panel-value" id="score">0</div>
+          <div class="panel-value" id="score" data-testid="score">0</div>
           <div class="panel-label">LEVEL</div>
-          <div class="panel-value" id="level">1</div>
+          <div class="panel-value" id="level" data-testid="level">1</div>
           <div class="panel-label">LINES</div>
-          <div class="panel-value" id="lines">0</div>
+          <div class="panel-value" id="lines" data-testid="lines">0</div>
         </div>
         <div class="panel-box" id="next-box">
           <div class="panel-label">NEXT</div>
@@ -39,31 +39,33 @@
 
       <!-- Game Canvas Wrapper -->
       <div id="canvas-wrapper">
-        <canvas id="game-canvas"></canvas>
+        <canvas id="game-canvas" data-testid="game-canvas"></canvas>
 
         <!-- Overlay screens -->
         <div id="overlay" class="hidden">
           <div id="overlay-content">
             <div id="overlay-title"></div>
             <div id="overlay-score-display"></div>
-            <button id="overlay-btn" class="big-btn">START</button>
+            <button id="overlay-btn" class="big-btn" data-testid="start-button">START</button>
           </div>
         </div>
       </div>
     </main>
 
-    <!-- Mobile Controls -->
-    <div id="mobile-controls">
-      <div id="ctrl-row-top">
-        <button id="btn-rotate" class="game-btn rotate-btn" aria-label="Rotate">↑<span>ROTATE</span></button>
+    <!-- Mobile Controls: left=movement / right=rotate+drop -->
+    <div id="mobile-controls" data-testid="controls">
+      <div id="ctrl-left">
+        <div class="ctrl-row">
+          <button id="btn-left"  class="game-btn" aria-label="Left">◀</button>
+          <button id="btn-right" class="game-btn" aria-label="Right">▶</button>
+        </div>
+        <div class="ctrl-row">
+          <button id="btn-soft"  class="game-btn" aria-label="Soft Drop">▼</button>
+        </div>
       </div>
-      <div id="ctrl-row-middle">
-        <button id="btn-left" class="game-btn" aria-label="Left">◀<span>LEFT</span></button>
-        <button id="btn-soft" class="game-btn" aria-label="Soft Drop">▼<span>DOWN</span></button>
-        <button id="btn-right" class="game-btn" aria-label="Right">▶<span>RIGHT</span></button>
-      </div>
-      <div id="ctrl-row-bottom">
-        <button id="btn-hard" class="game-btn hard-btn" aria-label="Hard Drop">⬇<span>DROP</span></button>
+      <div id="ctrl-right">
+        <button id="btn-rotate" class="game-btn rotate-btn" aria-label="Rotate">↑</button>
+        <button id="btn-hard"   class="game-btn hard-btn"   aria-label="Hard Drop">⬇</button>
       </div>
     </div>
   </div>

@@ -8,10 +8,53 @@ HTML / CSS / JavaScript のみで動く、PC・スマホ完全対応版テトリ
 
 ```
 mobile-tetris/
-├── index.html   # メイン HTML
-├── style.css    # スタイル（レスポンシブ対応）
-├── script.js    # ゲームロジック完全版
-└── README.md    # このファイル
+├── index.html            # メイン HTML
+├── style.css             # スタイル（レスポンシブ対応）
+├── script.js             # ゲームロジック完全版
+├── playwright.config.js  # Playwright 設定
+├── package.json          # npm スクリプト
+├── tests/
+│   └── tetris.spec.js    # E2E テスト
+└── README.md             # このファイル
+```
+
+---
+
+## セットアップ・テスト実行
+
+### セットアップ
+```bash
+cd mobile-tetris
+npm install
+npx playwright install
+```
+
+### ゲーム起動
+```bash
+npm run start
+# → http://localhost:8080 を開く
+```
+
+### E2E テスト実行（ヘッドレス）
+```bash
+npm run test:e2e
+```
+
+### E2E テスト実行（UI モード）
+```bash
+npm run test:e2e:ui
+```
+
+### 特定ブラウザのみ実行
+```bash
+npx playwright test --project=chromium
+npx playwright test --project=mobile-chrome
+npx playwright test --project=mobile-safari
+```
+
+### テストレポート表示
+```bash
+npx playwright show-report
 ```
 
 ---

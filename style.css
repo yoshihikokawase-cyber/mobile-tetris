@@ -214,68 +214,75 @@ html, body {
 /* ===== Mobile Controls ===== */
 #mobile-controls {
   flex-shrink: 0;
-  padding: 8px 12px 12px;
+  padding: 12px 20px 16px;
   background: var(--surface);
   border-top: 1px solid var(--border);
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-#ctrl-row-top,
-#ctrl-row-middle,
-#ctrl-row-bottom {
+/* Left zone: movement buttons */
+#ctrl-left {
   display: flex;
-  justify-content: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Right zone: rotate + drop */
+#ctrl-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.ctrl-row {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
 }
 
 .game-btn {
   background: var(--btn-bg);
   border: 2px solid var(--border);
-  border-radius: 12px;
+  border-radius: 50%;
   color: var(--text);
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   cursor: pointer;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
   line-height: 1;
   transition: background 0.08s, transform 0.08s, border-color 0.08s;
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
-  min-width: 72px;
-  min-height: 60px;
-  padding: 6px 10px;
-}
-
-.game-btn span {
-  font-size: 0.55rem;
-  letter-spacing: 1px;
-  color: var(--text-dim);
-  font-weight: 600;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  flex-shrink: 0;
 }
 
 .game-btn:active,
 .game-btn.pressed {
   background: var(--btn-active);
   border-color: var(--accent);
-  transform: scale(0.94);
+  transform: scale(0.92);
 }
 
 .rotate-btn {
-  min-width: 100px;
   border-color: #5555aa;
+  font-size: 1.5rem;
 }
 .rotate-btn:active, .rotate-btn.pressed {
   border-color: #aa55ff;
 }
 
 .hard-btn {
-  min-width: 100px;
   border-color: var(--accent2);
 }
 .hard-btn:active, .hard-btn.pressed {
@@ -297,8 +304,9 @@ html, body {
 
 @media (min-height: 800px) {
   .game-btn {
-    min-height: 68px;
-    font-size: 1.7rem;
+    width: 72px;
+    height: 72px;
+    font-size: 1.8rem;
   }
 }
 
@@ -307,9 +315,8 @@ html, body {
   #header h1 { font-size: 1rem; }
   #header { padding: 4px 10px; }
   .ctrl-btn { width: 34px; height: 34px; font-size: 1rem; }
-  #mobile-controls { padding: 4px 10px 6px; gap: 4px; }
-  .game-btn { min-height: 44px; min-width: 58px; font-size: 1.2rem; padding: 4px 8px; }
-  .game-btn span { display: none; }
+  #mobile-controls { padding: 4px 12px 6px; gap: 8px; }
+  .game-btn { width: 48px; height: 48px; font-size: 1.2rem; }
   .panel-label { font-size: 0.55rem; }
   .panel-value { font-size: 1rem; }
   #main { padding: 4px; gap: 6px; }

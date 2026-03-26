@@ -1,0 +1,19 @@
+{
+  "name": "mobile-tetris",
+  "version": "1.0.0",
+  "description": "HTML / CSS / JavaScript のみで動く、PC・スマホ完全対応版テトリスです。",
+  "main": "script.js",
+  "scripts": {
+    "start": "python -m http.server 8080",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "playwright": "^1.58.2"
+  }
+}

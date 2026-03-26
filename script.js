@@ -431,14 +431,14 @@ class Game {
     this._bindBtn('btn-left',   () => this._move(-1));
     this._bindBtn('btn-right',  () => this._move(1));
     this._bindBtn('btn-soft',   () => this._softDrop());
-    this._bindBtn('btn-rotate', () => this._rotate(1));
-    this._bindBtn('btn-hard',   () => this._hardDrop());
+    this._bindBtn('btn-rotate', () => this._rotate(1), true);  // no repeat
+    this._bindBtn('btn-hard',   () => this._hardDrop(), true); // no repeat
 
     // Swipe on game canvas
     this._initSwipe();
   }
 
-  _bindBtn(id, action) {
+  _bindBtn(id, action, noRepeat = false) {
     const btn = document.getElementById(id);
     if (!btn) return;
 
@@ -452,9 +452,11 @@ class Game {
       if (this.state !== 'playing') return;
       btn.classList.add('pressed');
       action();
-      repeatDelay = setTimeout(() => {
-        repeatTimer = setInterval(action, REPEAT_DELAY);
-      }, START_DELAY);
+      if (!noRepeat) {
+        repeatDelay = setTimeout(() => {
+          repeatTimer = setInterval(action, REPEAT_DELAY);
+        }, START_DELAY);
+      }
     };
     const stop = (e) => {
       e.preventDefault();
@@ -472,47 +474,7 @@ class Game {
   }
 
   _initSwipe() {
-    let startX = 0, startY = 0, startTime = 0;
-    const wrapper = document.getElementById('canvas-wrapper');
-    const TAP_MAX_DIST = 15;
-    const SWIPE_MIN_DIST = 30;
-    const SWIPE_TIME_MAX = 400;
-
-    wrapper.addEventListener('touchstart', e => {
-      if (this.state !== 'playing') return;
-      const t = e.touches[0];
-      startX = t.clientX; startY = t.clientY; startTime = Date.now();
-    }, { passive: true });
-
-    wrapper.addEventListener('touchend', e => {
-      if (this.state !== 'playing') return;
-      const t = e.changedTouches[0];
-      const dx = t.clientX - startX;
-      const dy = t.clientY - startY;
-      const dt = Date.now() - startTime;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      if (dist < TAP_MAX_DIST && dt < 250) {
-        // Tap = rotate
-        this._rotate(1);
-        return;
-      }
-      if (dt > SWIPE_TIME_MAX) return;
-      if (dist < SWIPE_MIN_DIST) return;
-
-      const ax = Math.abs(dx), ay = Math.abs(dy);
-      if (ax > ay) {
-        // Horizontal swipe
-        this._move(dx > 0 ? 1 : -1);
-      } else {
-        // Vertical swipe
-        if (dy > 0) {
-          this._softDrop();
-        } else {
-          this._hardDrop();
-        }
-      }
-    }, { passive: true });
+    // Swipe removed: all operations handled via on-screen buttons
   }
 
   // ---- Overlay ----
@@ -749,5 +711,5 @@ class Game {
 // Boot
 // =====================================================
 window.addEventListener('load', () => {
-  new Game();
+  window.__game = new Game(); // exposed for E2E tests only
 });
