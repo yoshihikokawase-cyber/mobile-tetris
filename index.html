@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Mobile Tetris</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header id="header">
+      <h1>TETRIS</h1>
+      <div id="header-controls">
+        <button id="btn-pause" class="ctrl-btn" aria-label="Pause">⏸</button>
+        <button id="btn-restart" class="ctrl-btn" aria-label="Restart">🔄</button>
+      </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main id="main">
+      <!-- Side panel: Score + Next -->
+      <aside id="side-panel">
+        <div class="panel-box" id="score-box">
+          <div class="panel-label">SCORE</div>
+          <div class="panel-value" id="score">0</div>
+          <div class="panel-label">LEVEL</div>
+          <div class="panel-value" id="level">1</div>
+          <div class="panel-label">LINES</div>
+          <div class="panel-value" id="lines">0</div>
+        </div>
+        <div class="panel-box" id="next-box">
+          <div class="panel-label">NEXT</div>
+          <canvas id="next-canvas" width="120" height="120"></canvas>
+        </div>
+      </aside>
+
+      <!-- Game Canvas Wrapper -->
+      <div id="canvas-wrapper">
+        <canvas id="game-canvas"></canvas>
+
+        <!-- Overlay screens -->
+        <div id="overlay" class="hidden">
+          <div id="overlay-content">
+            <div id="overlay-title"></div>
+            <div id="overlay-score-display"></div>
+            <button id="overlay-btn" class="big-btn">START</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Mobile Controls -->
+    <div id="mobile-controls">
+      <div id="ctrl-row-top">
+        <button id="btn-rotate" class="game-btn rotate-btn" aria-label="Rotate">↑<span>ROTATE</span></button>
+      </div>
+      <div id="ctrl-row-middle">
+        <button id="btn-left" class="game-btn" aria-label="Left">◀<span>LEFT</span></button>
+        <button id="btn-soft" class="game-btn" aria-label="Soft Drop">▼<span>DOWN</span></button>
+        <button id="btn-right" class="game-btn" aria-label="Right">▶<span>RIGHT</span></button>
+      </div>
+      <div id="ctrl-row-bottom">
+        <button id="btn-hard" class="game-btn hard-btn" aria-label="Hard Drop">⬇<span>DROP</span></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
