@@ -316,38 +316,60 @@ class Renderer {
     }
   }
 
-  drawNext(piece) {
+  // NEXT キュー（3個）をスロット分割で描画する。
+  // 先頭が最も不透明（次に来るピース）、末尾ほど薄く（遠い未来）。
+  drawNextQueue(queue) {
     const ctx = this.nctx;
     const nc = this.nc;
-    const cs = 24; // fixed cell size for next preview
+    const cs = 18;                            // 1セル 18px（I ピース 4列=72px < 80px 幅）
+    const slotH = Math.floor(nc.height / 3);  // キャンバス高さを3等分（52px/slot）
+    const alphas = [1.0, 0.65, 0.4];         // 近い順に不透明 → 遠いほど薄く
+
     ctx.clearRect(0, 0, nc.width, nc.height);
     ctx.fillStyle = '#0a0a1a';
     ctx.fillRect(0, 0, nc.width, nc.height);
-    if (!piece) return;
 
-    // Find bounding box of shape
-    const s = piece.currentShape;
-    let minR = 4, maxR = -1, minC = 4, maxC = -1;
-    for (let r = 0; r < 4; r++) {
-      for (let c = 0; c < 4; c++) {
-        if (s[r * 4 + c]) {
-          minR = Math.min(minR, r); maxR = Math.max(maxR, r);
-          minC = Math.min(minC, c); maxC = Math.max(maxC, c);
+    queue.slice(0, 3).forEach((piece, i) => {
+      const slotY = i * slotH;
+
+      // スロット間の区切り線（2本目・3本目の上端）
+      if (i > 0) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(6, slotY + 0.5);
+        ctx.lineTo(nc.width - 6, slotY + 0.5);
+        ctx.stroke();
+      }
+
+      if (!piece) return;
+
+      // ピースの外接矩形を求めてスロット中央に配置
+      const s = piece.currentShape;
+      let minR = 4, maxR = -1, minC = 4, maxC = -1;
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (s[r * 4 + c]) {
+            minR = Math.min(minR, r); maxR = Math.max(maxR, r);
+            minC = Math.min(minC, c); maxC = Math.max(maxC, c);
+          }
         }
       }
-    }
-    const pw = (maxC - minC + 1) * cs;
-    const ph = (maxR - minR + 1) * cs;
-    const ox = Math.floor((nc.width - pw) / 2) - minC * cs;
-    const oy = Math.floor((nc.height - ph) / 2) - minR * cs;
+      const pw = (maxC - minC + 1) * cs;
+      const ph = (maxR - minR + 1) * cs;
+      const ox = Math.floor((nc.width  - pw) / 2) - minC * cs;
+      const oy = slotY + Math.floor((slotH - ph) / 2) - minR * cs;
 
-    for (let r = 0; r < 4; r++) {
-      for (let c = 0; c < 4; c++) {
-        if (s[r * 4 + c]) {
-          this._drawCell(ctx, ox + c * cs, oy + r * cs, cs, piece.color);
+      ctx.globalAlpha = alphas[i];
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (s[r * 4 + c]) {
+            this._drawCell(ctx, ox + c * cs, oy + r * cs, cs, piece.color);
+          }
         }
       }
-    }
+    });
+    ctx.globalAlpha = 1;
   }
 
   // HOLD キャンバスを描画。canHold=false のとき薄く表示してクールダウン中を伝える。
@@ -397,7 +419,7 @@ class Game {
     this.bag = new Bag();
     this.renderer = null;
     this.piece = null;
-    this.nextPiece = null;
+    this.nextQueue = []; // 次に来るピースのキュー（常に3要素を維持）
     this.heldPiece = null; // ホールド中のピース（null = 空）
     this.canHold = true;   // false = ピース固定まで再ホールド不可
     this.score = 0;
@@ -485,6 +507,9 @@ class Game {
     wrapper.style.height = (ROWS * cs) + 'px';
 
     this._render();
+    // NEXT/HOLD キャンバスはゲームループとは独立しているためリサイズ時に明示的に再描画
+    if (this.nextQueue.length > 0) this.renderer.drawNextQueue(this.nextQueue);
+    this.renderer.drawHold(this.heldPiece, this.canHold);
   }
 
   // ---- Input ----
@@ -597,7 +622,8 @@ class Game {
     this.elBest.classList.remove('new-best'); // 前回のグロー演出をリセット
     document.getElementById('btn-hold')?.classList.remove('hold-used');
     this.bag = new Bag();
-    this.nextPiece = new Piece(this.bag.next());
+    // 3個分のキューを先行して生成（_spawnPiece が1個消費しながら1個補充する）
+    this.nextQueue = [new Piece(this.bag.next()), new Piece(this.bag.next()), new Piece(this.bag.next())];
     this.renderer.drawHold(null, true); // ホールド枠を空で初期化
     this._spawnPiece();
     this.state = 'playing';
@@ -649,9 +675,9 @@ class Game {
 
   // ---- Piece management ----
   _spawnPiece() {
-    this.piece = this.nextPiece;
-    this.nextPiece = new Piece(this.bag.next());
-    this.renderer.drawNext(this.nextPiece);
+    this.piece = this.nextQueue.shift();           // キュー先頭を現在ピースへ
+    this.nextQueue.push(new Piece(this.bag.next())); // バッグから補充してキュー末尾へ
+    this.renderer.drawNextQueue(this.nextQueue);   // 3スロット表示を更新
     // Check game over
     if (!this.board.isValid(this.piece.shape, this.piece.row, this.piece.col)) {
       this._gameOver();
