@@ -139,6 +139,23 @@ html, body {
   font-variant-numeric: tabular-nums; /* 数字幅を揃えてカクカク防止 */
 }
 
+/* ===== Best Score ===== */
+.best-label {
+  color: #b89000; /* BEST ラベルは落ち着いたゴールド */
+}
+#best {
+  color: #ffd700; /* BEST 値は明るいゴールド */
+}
+/* ハイスコア更新時のグロー演出（transform不使用 → overflow:hidden と競合しない） */
+.new-best {
+  animation: best-flash 0.55s ease forwards;
+}
+@keyframes best-flash {
+  0%   { color: #ffd700; text-shadow: none; }
+  35%  { color: #fff;    text-shadow: 0 0 14px #ffd700, 0 0 4px #fff; }
+  100% { color: #ffd700; text-shadow: none; }
+}
+
 #next-canvas {
   display: block;
   margin: 6px auto 0;

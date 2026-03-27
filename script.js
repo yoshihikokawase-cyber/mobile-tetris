@@ -79,6 +79,9 @@ const PIECE_KEYS = Object.keys(TETROMINOES);
 // Scoring table (lines cleared at once)
 const LINE_SCORES = [0, 100, 300, 500, 800];
 
+// localStorage key for best score persistence
+const BEST_KEY = 'tetris_best';
+
 // Drop interval per level (ms)
 function dropInterval(level) {
   return Math.max(80, 1000 - (level - 1) * 80);
@@ -340,6 +343,7 @@ class Game {
     this.score = 0;
     this.level = 1;
     this.lines = 0;
+    this.bestScore = 0;
     this.state = 'idle'; // idle | playing | paused | gameover
     this._dropTimer = null;
     this._lastDrop = 0;
@@ -365,6 +369,11 @@ class Game {
     this.elOverlayBtn = document.getElementById('overlay-btn');
     this.gameCanvas = document.getElementById('game-canvas');
     this.nextCanvas = document.getElementById('next-canvas');
+
+    this.elBest = document.getElementById('best');
+    // localStorage から保存済みハイスコアを読み込む（初回は 0）
+    this.bestScore = parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
+    this.elBest.textContent = this.bestScore.toLocaleString();
 
     this.elOverlayBtn.addEventListener('click', () => this._handleOverlayBtn());
     document.getElementById('btn-pause').addEventListener('click', () => this.togglePause());
@@ -516,6 +525,7 @@ class Game {
     this.board.reset();
     this.score = 0; this.level = 1; this.lines = 0;
     this._updateHUD();
+    this.elBest.classList.remove('new-best'); // 前回のグロー演出をリセット
     this.bag = new Bag();
     this.nextPiece = new Piece(this.bag.next());
     this._spawnPiece();
@@ -557,7 +567,12 @@ class Game {
   _gameOver() {
     this.state = 'gameover';
     cancelAnimationFrame(this._rafId);
-    this._showOverlay('GAME OVER', `SCORE: ${this.score}`, 'RETRY');
+    // ラインなし終了でも _updateHUD が呼ばれないケースをカバー
+    const isNewBest = this._checkBest();
+    const scoreText = isNewBest
+      ? `\uD83C\uDFC6 NEW BEST: ${this.score.toLocaleString()}`
+      : `SCORE: ${this.score.toLocaleString()}`;
+    this._showOverlay('GAME OVER', scoreText, 'RETRY');
     this.elOverlayBtn.onclick = () => this._handleOverlayBtn();
   }
 
@@ -712,11 +727,27 @@ class Game {
     }
   }
 
+  // ---- Best Score ----
+  // 現在スコアがベストを超えていれば保存・表示更新・グロー演出を発動。
+  // true を返すと呼び出し元が「新記録」と判定できる。
+  _checkBest() {
+    if (this.score <= this.bestScore) return false;
+    this.bestScore = this.score;
+    localStorage.setItem(BEST_KEY, this.bestScore);
+    this.elBest.textContent = this.bestScore.toLocaleString();
+    // CSS animation をリセットして再発動（reflow で強制再起動）
+    this.elBest.classList.remove('new-best');
+    void this.elBest.offsetWidth;
+    this.elBest.classList.add('new-best');
+    return true;
+  }
+
   // ---- HUD ----
   _updateHUD() {
     this.elScore.textContent = this.score.toLocaleString();
     this.elLevel.textContent = this.level;
     this.elLines.textContent = this.lines;
+    this._checkBest();
   }
 
   // ---- Render ----
