@@ -374,8 +374,16 @@ class Game {
   // ---- Renderer + sizing ----
   _initRenderer() {
     this.renderer = new Renderer(this.gameCanvas, this.nextCanvas);
+    this._resizeRafId = null;
     this._updateSize();
-    window.addEventListener('resize', () => this._updateSize());
+    const onResize = () => {
+      if (this._resizeRafId) cancelAnimationFrame(this._resizeRafId);
+      this._resizeRafId = requestAnimationFrame(() => this._updateSize());
+    };
+    window.addEventListener('resize', onResize);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', onResize);
+    }
   }
 
   _updateSize() {
@@ -385,15 +393,20 @@ class Game {
     const controls = document.getElementById('mobile-controls');
     const header = document.getElementById('header');
 
+    // visualViewport はモバイルのキーボード表示等でも正確な高さを返す
+    const viewH = (window.visualViewport ? window.visualViewport.height : null)
+                  || document.documentElement.clientHeight;
     const headerH = header.offsetHeight;
     const controlsH = controls.offsetHeight;
-    const availH = window.innerHeight - headerH - controlsH - 20; // 20 = padding+gap
-    const availW = main.offsetWidth - sidePanel.offsetWidth - 20;
+    const availH = viewH - headerH - controlsH - 32; // 32 = padding + gap バッファ
 
-    // Cell size from both dimensions
+    const mainW = main.offsetWidth;
+    const sidePanelW = sidePanel.offsetWidth;
+    const availW = mainW - sidePanelW - 32;
+
     const cellByH = Math.floor(availH / ROWS);
     const cellByW = Math.floor(availW / COLS);
-    const cs = Math.max(16, Math.min(cellByH, cellByW));
+    const cs = Math.max(14, Math.min(cellByH, cellByW));
 
     this.renderer.resize(cs);
     wrapper.style.width = (COLS * cs) + 'px';
@@ -427,25 +440,25 @@ class Game {
       }
     });
 
-    // Mobile buttons
-    this._bindBtn('btn-left',   () => this._move(-1));
-    this._bindBtn('btn-right',  () => this._move(1));
-    this._bindBtn('btn-soft',   () => this._softDrop());
-    this._bindBtn('btn-rotate', () => this._rotate(1), true);  // no repeat
-    this._bindBtn('btn-hard',   () => this._hardDrop(), true); // no repeat
+    // Mobile buttons（delays: start=長押し開始ms, repeat=連打間隔ms）
+    this._bindBtn('btn-left',   () => this._move(-1),   false, { repeat: 60 });  // キビキビした横移動
+    this._bindBtn('btn-right',  () => this._move(1),    false, { repeat: 60 });
+    this._bindBtn('btn-soft',   () => this._softDrop(), false, { start: 100, repeat: 50 }); // ソフトドロップは素早く反応
+    this._bindBtn('btn-rotate', () => this._rotate(1), true);
+    this._bindBtn('btn-hard',   () => this._hardDrop(), true);
 
     // Swipe on game canvas
     this._initSwipe();
   }
 
-  _bindBtn(id, action, noRepeat = false) {
+  _bindBtn(id, action, noRepeat = false, delays = {}) {
     const btn = document.getElementById(id);
     if (!btn) return;
 
     let repeatTimer = null;
     let repeatDelay = null;
-    const START_DELAY = 180;
-    const REPEAT_DELAY = 80;
+    const START_DELAY = delays.start ?? 180;
+    const REPEAT_DELAY = delays.repeat ?? 80;
 
     const start = (e) => {
       e.preventDefault();
@@ -453,24 +466,29 @@ class Game {
       btn.classList.add('pressed');
       action();
       if (!noRepeat) {
+        clearTimeout(repeatDelay);
+        clearInterval(repeatTimer);
         repeatDelay = setTimeout(() => {
-          repeatTimer = setInterval(action, REPEAT_DELAY);
+          repeatTimer = setInterval(() => {
+            if (this.state === 'playing') action();
+            else stop();
+          }, REPEAT_DELAY);
         }, START_DELAY);
       }
     };
-    const stop = (e) => {
-      e.preventDefault();
+    const stop = () => {
       btn.classList.remove('pressed');
       clearTimeout(repeatDelay);
       clearInterval(repeatTimer);
+      repeatTimer = null;
+      repeatDelay = null;
     };
 
-    btn.addEventListener('touchstart', start, { passive: false });
-    btn.addEventListener('touchend', stop, { passive: false });
-    btn.addEventListener('touchcancel', stop, { passive: false });
-    btn.addEventListener('mousedown', start);
-    btn.addEventListener('mouseup', stop);
-    btn.addEventListener('mouseleave', stop);
+    // Pointer Events でタッチ・マウス両対応（より信頼性が高い）
+    btn.addEventListener('pointerdown', start, { passive: false });
+    btn.addEventListener('pointerup', stop);
+    btn.addEventListener('pointercancel', stop);
+    btn.addEventListener('pointerleave', stop);
   }
 
   _initSwipe() {

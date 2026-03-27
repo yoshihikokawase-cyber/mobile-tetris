@@ -133,7 +133,10 @@ html, body {
   font-weight: 700;
   color: var(--accent);
   min-height: 1.6rem;
-  word-break: break-all;
+  word-break: normal;
+  white-space: nowrap;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums; /* 数字幅を揃えてカクカク防止 */
 }
 
 #next-canvas {
@@ -214,7 +217,8 @@ html, body {
 /* ===== Mobile Controls ===== */
 #mobile-controls {
   flex-shrink: 0;
-  padding: 12px 20px 16px;
+  padding: 12px 20px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   background: var(--surface);
   border-top: 1px solid var(--border);
   display: flex;
@@ -222,6 +226,7 @@ html, body {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  touch-action: none;
 }
 
 /* Left zone: movement buttons */
@@ -229,21 +234,22 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 16px; /* ソフトドロップ行と左右行の間隔を広げ、誤操作防止 */
 }
 
-/* Right zone: rotate + drop */
+/* Right zone: hard drop (top) + rotate (bottom) */
+/* 親指は自然に下に落ちる → 回転(下)が押しやすい / DROP(上)は意識的操作 */
 #ctrl-right {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 22px; /* 回転とハードドロップを明確に分離 */
 }
 
 .ctrl-row {
   display: flex;
   flex-direction: row;
-  gap: 12px;
+  gap: 20px; /* 左右ボタンの間隔を広げ、同時押し防止 */
 }
 
 .game-btn {
@@ -254,17 +260,26 @@ html, body {
   font-size: 1.6rem;
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   line-height: 1;
+  gap: 2px;
   transition: background 0.08s, transform 0.08s, border-color 0.08s;
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
-  width: 64px;
-  height: 64px;
+  width: 68px;
+  height: 68px;
   padding: 0;
   flex-shrink: 0;
+}
+
+.btn-label {
+  font-size: 0.5rem;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  line-height: 1;
 }
 
 .game-btn:active,
@@ -275,39 +290,70 @@ html, body {
 }
 
 .rotate-btn {
-  border-color: #5555aa;
-  font-size: 1.5rem;
+  border-color: #6655cc;
+  font-size: 1.9rem;
+  width: 76px;   /* 回転は最多使用 → 最大サイズ */
+  height: 76px;
+  border-width: 2px;
 }
 .rotate-btn:active, .rotate-btn.pressed {
   border-color: #aa55ff;
+  background: #2a1a50;
 }
 
 .hard-btn {
   border-color: var(--accent2);
+  border-width: 2px;
+  background: rgba(40, 8, 8, 0.8);
+  color: #ff8080;
+  font-size: 1.2rem;
+  border-radius: 14px;
+  width: 64px;   /* 回転より明確に小さく = 「慎重に押す」シグナル */
+  height: 46px;
 }
 .hard-btn:active, .hard-btn.pressed {
-  background: #3a1a1a;
-  border-color: var(--accent2);
+  background: #4a1a1a;
+  border-color: #ff2222;
+  color: #ffaaaa;
+}
+.hard-btn .btn-label {
+  color: #ff6060;
 }
 
 /* ===== Ghost piece color hint ===== */
 
 /* ===== Responsive: larger phones landscape / tablets ===== */
 @media (min-width: 480px) {
-  :root {
-    --cell: 32px;
-  }
-  #side-panel {
-    width: 110px;
-  }
+  :root { --cell: 32px; }
+  #side-panel { width: 110px; }
 }
 
+/* 縦画面・高さ余裕あり */
 @media (min-height: 800px) {
-  .game-btn {
-    width: 72px;
-    height: 72px;
-    font-size: 1.8rem;
-  }
+  .game-btn { width: 72px; height: 72px; font-size: 1.8rem; }
+  .rotate-btn { width: 80px; height: 80px; font-size: 2rem; }
+  .hard-btn { width: 68px; height: 52px; font-size: 1.3rem; }
+  #ctrl-right { gap: 24px; }
+  .ctrl-row { gap: 24px; }
+  #ctrl-left { gap: 18px; }
+}
+
+/* ===== 小さいスマホ（高さ640px以下 or 幅360px以下）===== */
+@media (max-height: 640px), (max-width: 360px) {
+  #header h1 { font-size: 1.1rem; }
+  #header { padding: 6px 10px; }
+  .ctrl-btn { width: 36px; height: 36px; font-size: 1rem; }
+  #mobile-controls { padding: 8px 14px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); gap: 10px; }
+  .game-btn { width: 60px; height: 60px; font-size: 1.4rem; }
+  .rotate-btn { width: 64px; height: 64px; font-size: 1.6rem; }
+  .hard-btn { width: 56px; height: 42px; font-size: 1.1rem; }
+  #ctrl-right { gap: 16px; }
+  .ctrl-row { gap: 16px; }
+  #ctrl-left { gap: 12px; }
+  .panel-label { font-size: 0.6rem; }
+  .panel-value { font-size: 1rem; }
+  #main { padding: 4px 6px; gap: 6px; }
+  #side-panel { width: 88px; }
 }
 
 /* ===== Landscape mobile: hide some labels, shrink controls ===== */
@@ -315,8 +361,13 @@ html, body {
   #header h1 { font-size: 1rem; }
   #header { padding: 4px 10px; }
   .ctrl-btn { width: 34px; height: 34px; font-size: 1rem; }
-  #mobile-controls { padding: 4px 12px 6px; gap: 8px; }
+  #mobile-controls { padding: 4px 12px; padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); gap: 8px; }
   .game-btn { width: 48px; height: 48px; font-size: 1.2rem; }
+  .rotate-btn { width: 52px; height: 52px; }
+  .hard-btn { width: 46px; height: 36px; font-size: 1rem; }
+  #ctrl-right { gap: 12px; }
+  #ctrl-left { gap: 10px; }
+  .ctrl-row { gap: 8px; }
   .panel-label { font-size: 0.55rem; }
   .panel-value { font-size: 1rem; }
   #main { padding: 4px; gap: 6px; }
@@ -325,9 +376,7 @@ html, body {
 
 /* ===== PC / wide screen ===== */
 @media (min-width: 700px) {
-  #app {
-    max-width: 700px;
-  }
+  #app { max-width: 700px; }
   :root { --cell: 34px; }
   #side-panel { width: 130px; }
   .panel-value { font-size: 1.5rem; }
