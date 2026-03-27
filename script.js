@@ -316,67 +316,51 @@ class Renderer {
     }
   }
 
-  // NEXT キュー（3個）をスロット分割で描画する。
-  // 先頭が最も不透明（次に来るピース）、末尾ほど薄く（遠い未来）。
+  // NEXT キューの先頭1個をキャンバス中央に描画する。
+  // 内部キュー（3要素）はそのまま維持し、表示だけ絞る。
   drawNextQueue(queue) {
     const ctx = this.nctx;
     const nc = this.nc;
-    const cs = 18;                            // 1セル 18px（I ピース 4列=72px < 80px 幅）
-    const slotH = Math.floor(nc.height / 3);  // キャンバス高さを3等分（52px/slot）
-    const alphas = [1.0, 0.65, 0.4];         // 近い順に不透明 → 遠いほど薄く
+    const cs = Math.floor((nc.width - 2) / 4); // 4セルが幅に収まる最大サイズ
 
     ctx.clearRect(0, 0, nc.width, nc.height);
     ctx.fillStyle = '#0a0a1a';
     ctx.fillRect(0, 0, nc.width, nc.height);
 
-    queue.slice(0, 3).forEach((piece, i) => {
-      const slotY = i * slotH;
+    const piece = queue[0];
+    if (!piece) return;
 
-      // スロット間の区切り線（2本目・3本目の上端）
-      if (i > 0) {
-        ctx.strokeStyle = 'rgba(255,255,255,0.07)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(6, slotY + 0.5);
-        ctx.lineTo(nc.width - 6, slotY + 0.5);
-        ctx.stroke();
-      }
-
-      if (!piece) return;
-
-      // ピースの外接矩形を求めてスロット中央に配置
-      const s = piece.currentShape;
-      let minR = 4, maxR = -1, minC = 4, maxC = -1;
-      for (let r = 0; r < 4; r++) {
-        for (let c = 0; c < 4; c++) {
-          if (s[r * 4 + c]) {
-            minR = Math.min(minR, r); maxR = Math.max(maxR, r);
-            minC = Math.min(minC, c); maxC = Math.max(maxC, c);
-          }
+    // ピースの外接矩形を求めてキャンバス中央に配置（drawHold と同じロジック）
+    const s = piece.currentShape;
+    let minR = 4, maxR = -1, minC = 4, maxC = -1;
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        if (s[r * 4 + c]) {
+          minR = Math.min(minR, r); maxR = Math.max(maxR, r);
+          minC = Math.min(minC, c); maxC = Math.max(maxC, c);
         }
       }
-      const pw = (maxC - minC + 1) * cs;
-      const ph = (maxR - minR + 1) * cs;
-      const ox = Math.floor((nc.width  - pw) / 2) - minC * cs;
-      const oy = slotY + Math.floor((slotH - ph) / 2) - minR * cs;
+    }
+    const pw = (maxC - minC + 1) * cs;
+    const ph = (maxR - minR + 1) * cs;
+    const ox = Math.floor((nc.width  - pw) / 2) - minC * cs;
+    const oy = Math.floor((nc.height - ph) / 2) - minR * cs;
 
-      ctx.globalAlpha = alphas[i];
-      for (let r = 0; r < 4; r++) {
-        for (let c = 0; c < 4; c++) {
-          if (s[r * 4 + c]) {
-            this._drawCell(ctx, ox + c * cs, oy + r * cs, cs, piece.color);
-          }
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        if (s[r * 4 + c]) {
+          this._drawCell(ctx, ox + c * cs, oy + r * cs, cs, piece.color);
         }
       }
-    });
-    ctx.globalAlpha = 1;
+    }
   }
 
   // HOLD キャンバスを描画。canHold=false のとき薄く表示してクールダウン中を伝える。
   drawHold(piece, canHold) {
     const ctx = this.hctx;
     const hc = this.hc;
-    const cs = 20; // 80px ÷ 4セル = 20px（全ピースが収まるサイズ）
+    // キャンバス幅から cs を自動算出（4セル分が収まる最大サイズ）
+    const cs = Math.floor((hc.width - 2) / 4);
     ctx.clearRect(0, 0, hc.width, hc.height);
     ctx.fillStyle = '#0a0a1a';
     ctx.fillRect(0, 0, hc.width, hc.height);
@@ -505,6 +489,27 @@ class Game {
     this.renderer.resize(cs);
     wrapper.style.width = (COLS * cs) + 'px';
     wrapper.style.height = (ROWS * cs) + 'px';
+
+    // HOLD/NEXT キャンバスをレイアウトモードに合わせて動的リサイズ
+    // 700px 未満 = スマホ横並び / 700px 以上 = PC 縦並び
+    if (window.innerWidth < 700) {
+      // 横並び: 各ボックスの実幅からキャンバス幅を算出
+      const previewRow = document.getElementById('preview-row');
+      const rowW   = previewRow.offsetWidth;
+      const gap    = 6;  // #preview-row の gap
+      const padH   = 8;  // #hold-box / #next-box の左右パディング合計（4px×2）
+      const cvW    = Math.max(40, Math.floor((rowW - gap) / 2) - padH);
+      this.holdCanvas.width  = cvW;
+      this.holdCanvas.height = cvW; // HOLD・NEXT ともに正方形（1個表示）
+      this.nextCanvas.width  = cvW;
+      this.nextCanvas.height = cvW;
+    } else {
+      // PC 縦並び: 固定サイズ（1個表示）
+      this.holdCanvas.width  = 80;
+      this.holdCanvas.height = 80;
+      this.nextCanvas.width  = 80;
+      this.nextCanvas.height = 80;
+    }
 
     this._render();
     // NEXT/HOLD キャンバスはゲームループとは独立しているためリサイズ時に明示的に再描画

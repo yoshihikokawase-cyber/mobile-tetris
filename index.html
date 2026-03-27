@@ -33,13 +33,16 @@
           <div class="panel-label">LINES</div>
           <div class="panel-value" id="lines" data-testid="lines">0</div>
         </div>
-        <div class="panel-box" id="hold-box">
-          <div class="panel-label">HOLD</div>
-          <canvas id="hold-canvas" width="80" height="80"></canvas>
-        </div>
-        <div class="panel-box" id="next-box">
-          <div class="panel-label">NEXT</div>
-          <canvas id="next-canvas" width="80" height="156"></canvas>
+        <!-- スマホ: HOLD と NEXT を横並び / PC: 縦並び（CSS で切替） -->
+        <div id="preview-row">
+          <div class="panel-box" id="hold-box">
+            <div class="panel-label">HOLD</div>
+            <canvas id="hold-canvas" width="80" height="80"></canvas>
+          </div>
+          <div class="panel-box" id="next-box">
+            <div class="panel-label">NEXT</div>
+            <canvas id="next-canvas" width="80" height="80"></canvas>
+          </div>
         </div>
       </aside>
 

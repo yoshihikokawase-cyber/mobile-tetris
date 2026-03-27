@@ -106,7 +106,22 @@ html, body {
   flex-direction: column;
   gap: 8px;
   flex-shrink: 0;
-  width: 100px;
+  width: 170px; /* HOLD+NEXT 横並び分の幅（スマホ基準） */
+}
+
+/* HOLD と NEXT を包むラッパー
+   スマホ: flex-direction: row（横並び）
+   PC    : flex-direction: column（縦並び、min-width:700px で上書き） */
+#preview-row {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+}
+#hold-box,
+#next-box {
+  flex: 1;
+  min-width: 0;       /* flex 縮小時のオーバーフロー防止 */
+  padding: 6px 4px;   /* 横幅が狭いため標準より小さめに */
 }
 
 .panel-box {
@@ -367,7 +382,7 @@ html, body {
 /* ===== Responsive: larger phones landscape / tablets ===== */
 @media (min-width: 480px) {
   :root { --cell: 32px; }
-  #side-panel { width: 110px; }
+  /* side-panel はスマホ共通の 170px を維持（横並び HOLD+NEXT のため） */
 }
 
 /* 縦画面・高さ余裕あり */
@@ -397,7 +412,9 @@ html, body {
   .panel-label { font-size: 0.6rem; }
   .panel-value { font-size: 1rem; }
   #main { padding: 4px 6px; gap: 6px; }
-  #side-panel { width: 88px; }
+  #side-panel { width: 150px; } /* 小画面でも横並び HOLD+NEXT が収まる最小幅 */
+  #preview-row { gap: 4px; }
+  #hold-box, #next-box { padding: 4px 3px; }
 }
 
 /* ===== Landscape mobile: hide some labels, shrink controls ===== */
@@ -416,7 +433,9 @@ html, body {
   .panel-label { font-size: 0.55rem; }
   .panel-value { font-size: 1rem; }
   #main { padding: 4px; gap: 6px; }
-  #side-panel { width: 80px; }
+  #side-panel { width: 150px; } /* 横持ちでも横並び維持 */
+  #preview-row { gap: 4px; }
+  #hold-box, #next-box { padding: 4px 3px; }
 }
 
 /* ===== PC / wide screen ===== */
@@ -424,5 +443,8 @@ html, body {
   #app { max-width: 700px; }
   :root { --cell: 34px; }
   #side-panel { width: 130px; }
+  /* PC: HOLD+NEXT を元の縦並びに戻す */
+  #preview-row { flex-direction: column; gap: 8px; }
+  #hold-box, #next-box { padding: 10px 8px; } /* 標準パディングを復元 */
   .panel-value { font-size: 1.5rem; }
 }
