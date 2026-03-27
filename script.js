@@ -196,11 +196,13 @@ function ghostRow(board, piece) {
 // Renderer
 // =====================================================
 class Renderer {
-  constructor(gameCanvas, nextCanvas) {
+  constructor(gameCanvas, nextCanvas, holdCanvas) {
     this.gc = gameCanvas;
     this.nc = nextCanvas;
-    this.ctx = gameCanvas.getContext('2d');
+    this.hc = holdCanvas;
+    this.ctx  = gameCanvas.getContext('2d');
     this.nctx = nextCanvas.getContext('2d');
+    this.hctx = holdCanvas.getContext('2d');
     this.cellSize = 30;
   }
 
@@ -347,6 +349,43 @@ class Renderer {
       }
     }
   }
+
+  // HOLD キャンバスを描画。canHold=false のとき薄く表示してクールダウン中を伝える。
+  drawHold(piece, canHold) {
+    const ctx = this.hctx;
+    const hc = this.hc;
+    const cs = 20; // 80px ÷ 4セル = 20px（全ピースが収まるサイズ）
+    ctx.clearRect(0, 0, hc.width, hc.height);
+    ctx.fillStyle = '#0a0a1a';
+    ctx.fillRect(0, 0, hc.width, hc.height);
+    if (!piece) return;
+
+    if (!canHold) ctx.globalAlpha = 0.35; // ホールド使用済み：薄く表示
+
+    const s = piece.currentShape;
+    let minR = 4, maxR = -1, minC = 4, maxC = -1;
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        if (s[r * 4 + c]) {
+          minR = Math.min(minR, r); maxR = Math.max(maxR, r);
+          minC = Math.min(minC, c); maxC = Math.max(maxC, c);
+        }
+      }
+    }
+    const pw = (maxC - minC + 1) * cs;
+    const ph = (maxR - minR + 1) * cs;
+    const ox = Math.floor((hc.width  - pw) / 2) - minC * cs;
+    const oy = Math.floor((hc.height - ph) / 2) - minR * cs;
+
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        if (s[r * 4 + c]) {
+          this._drawCell(ctx, ox + c * cs, oy + r * cs, cs, piece.color);
+        }
+      }
+    }
+    ctx.globalAlpha = 1; // 透明度リセット
+  }
 }
 
 // =====================================================
@@ -359,6 +398,8 @@ class Game {
     this.renderer = null;
     this.piece = null;
     this.nextPiece = null;
+    this.heldPiece = null; // ホールド中のピース（null = 空）
+    this.canHold = true;   // false = ピース固定まで再ホールド不可
     this.score = 0;
     this.level = 1;
     this.lines = 0;
@@ -390,6 +431,7 @@ class Game {
     this.elOverlayBtn = document.getElementById('overlay-btn');
     this.gameCanvas = document.getElementById('game-canvas');
     this.nextCanvas = document.getElementById('next-canvas');
+    this.holdCanvas = document.getElementById('hold-canvas');
 
     this.elBest = document.getElementById('best');
     // localStorage から保存済みハイスコアを読み込む（初回は 0）
@@ -403,7 +445,7 @@ class Game {
 
   // ---- Renderer + sizing ----
   _initRenderer() {
-    this.renderer = new Renderer(this.gameCanvas, this.nextCanvas);
+    this.renderer = new Renderer(this.gameCanvas, this.nextCanvas, this.holdCanvas);
     this._resizeRafId = null;
     this._updateSize();
     const onResize = () => {
@@ -449,7 +491,7 @@ class Game {
   _initInput() {
     // Keyboard
     document.addEventListener('keydown', e => {
-      if (['ArrowLeft','ArrowRight','ArrowDown','ArrowUp','Space','KeyP','KeyR'].includes(e.code)) {
+      if (['ArrowLeft','ArrowRight','ArrowDown','ArrowUp','Space','KeyP','KeyR','KeyC'].includes(e.code)) {
         e.preventDefault();
       }
       if (this.state === 'playing') {
@@ -459,6 +501,7 @@ class Game {
           case 'ArrowDown':  this._softDrop(); break;
           case 'ArrowUp':    this._rotate(1); break;
           case 'Space':      this._hardDrop(); break;
+          case 'KeyC':       this._hold(); break;
           case 'KeyP':       this.togglePause(); break;
           case 'KeyR':       this.restart(); break;
         }
@@ -474,6 +517,7 @@ class Game {
     this._bindBtn('btn-left',   () => this._move(-1),   false, { repeat: 60 });  // キビキビした横移動
     this._bindBtn('btn-right',  () => this._move(1),    false, { repeat: 60 });
     this._bindBtn('btn-soft',   () => this._softDrop(), false, { start: 100, repeat: 50 }); // ソフトドロップは素早く反応
+    this._bindBtn('btn-hold',   () => this._hold(),     true);
     this._bindBtn('btn-rotate', () => this._rotate(1), true);
     this._bindBtn('btn-hard',   () => this._hardDrop(), true);
 
@@ -545,12 +589,16 @@ class Game {
   start() {
     this._flashToken++;   // 前のゲームで保留中の setTimeout があればキャンセル
     this._flashRows = [];
+    this.heldPiece = null;
+    this.canHold   = true;
     this.board.reset();
     this.score = 0; this.level = 1; this.lines = 0;
     this._updateHUD();
     this.elBest.classList.remove('new-best'); // 前回のグロー演出をリセット
+    document.getElementById('btn-hold')?.classList.remove('hold-used');
     this.bag = new Bag();
     this.nextPiece = new Piece(this.bag.next());
+    this.renderer.drawHold(null, true); // ホールド枠を空で初期化
     this._spawnPiece();
     this.state = 'playing';
     this._hideOverlay();
@@ -678,6 +726,37 @@ class Game {
     return kicks[`${from}_${to}`] || [[0,0]];
   }
 
+  _hold() {
+    // フラッシュ中は piece === null なのでここに到達しない（自然にガードされる）
+    if (!this.piece || !this.canHold) return;
+
+    this.canHold = false;
+    document.getElementById('btn-hold')?.classList.add('hold-used');
+
+    if (this.heldPiece === null) {
+      // ホールドが空 → 現在ピースを保存して次ピースをスポーン
+      this.heldPiece = new Piece(this.piece.key); // rotation=0 のリセット状態で保存
+      this.piece = null;
+      this._spawnPiece();
+      this._lastDrop = performance.now(); // 即落下防止
+    } else {
+      // ホールドにピースあり → 現在ピースとホールドを交換
+      const incomingKey = this.heldPiece.key;
+      this.heldPiece = new Piece(this.piece.key); // 現在ピースをホールドへ
+      this.piece     = new Piece(incomingKey);    // ホールドのピースを初期位置で展開
+
+      if (!this.board.isValid(this.piece.shape, this.piece.row, this.piece.col)) {
+        this._gameOver(); // スポーン位置が埋まっていればゲームオーバー
+        return;
+      }
+      this._isOnGround = false;
+      this._lastDrop = performance.now(); // 即落下防止
+    }
+
+    this.renderer.drawHold(this.heldPiece, this.canHold);
+    this._render();
+  }
+
   _softDrop() {
     if (!this.piece) return;
     if (this.board.isValid(this.piece.shape, this.piece.row + 1, this.piece.col)) {
@@ -733,6 +812,10 @@ class Game {
     }
     // playing/paused どちらでも次のピースをスポーン（paused中はループが止まるだけ）
     if (this.state === 'playing' || this.state === 'paused') {
+      // ピース固定 → ホールドを再び使えるようにする
+      this.canHold = true;
+      document.getElementById('btn-hold')?.classList.remove('hold-used');
+      this.renderer.drawHold(this.heldPiece, this.canHold);
       this._spawnPiece();
       this._lastDrop = performance.now(); // フラッシュ時間分の経過をリセット → 即落下防止
     }

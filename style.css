@@ -156,10 +156,35 @@ html, body {
   100% { color: #ffd700; text-shadow: none; }
 }
 
+#hold-canvas {
+  display: block;
+  margin: 4px auto 0;
+  border-radius: 4px;
+}
+
 #next-canvas {
   display: block;
   margin: 6px auto 0;
   border-radius: 4px;
+}
+
+/* ===== Hold Button ===== */
+.hold-btn {
+  border-color: #6655cc;       /* 回転ボタンと同系色：「戦略操作」を視覚的に統一 */
+  background: rgba(10, 8, 30, 0.8);
+  color: #aa88ff;
+  font-size: 1.1rem;
+  border-radius: 14px;
+  width: 76px;
+  height: 40px;
+  border-width: 2px;
+}
+.hold-btn:active, .hold-btn.pressed {
+  border-color: #aa55ff;
+  background: #2a1a50;
+}
+.hold-btn.hold-used {
+  opacity: 0.38; /* ホールド使用済み：薄く表示してクールダウン中を伝える */
 }
 
 /* ===== Canvas Wrapper ===== */
@@ -350,6 +375,7 @@ html, body {
   .game-btn { width: 72px; height: 72px; font-size: 1.8rem; }
   .rotate-btn { width: 80px; height: 80px; font-size: 2rem; }
   .hard-btn { width: 68px; height: 52px; font-size: 1.3rem; }
+  .hold-btn { width: 80px; height: 44px; }
   #ctrl-right { gap: 24px; }
   .ctrl-row { gap: 24px; }
   #ctrl-left { gap: 18px; }
@@ -364,6 +390,7 @@ html, body {
   .game-btn { width: 60px; height: 60px; font-size: 1.4rem; }
   .rotate-btn { width: 64px; height: 64px; font-size: 1.6rem; }
   .hard-btn { width: 56px; height: 42px; font-size: 1.1rem; }
+  .hold-btn { width: 64px; height: 34px; font-size: 0.95rem; }
   #ctrl-right { gap: 16px; }
   .ctrl-row { gap: 16px; }
   #ctrl-left { gap: 12px; }
@@ -382,6 +409,7 @@ html, body {
   .game-btn { width: 48px; height: 48px; font-size: 1.2rem; }
   .rotate-btn { width: 52px; height: 52px; }
   .hard-btn { width: 46px; height: 36px; font-size: 1rem; }
+  .hold-btn { width: 54px; height: 28px; font-size: 0.85rem; }
   #ctrl-right { gap: 12px; }
   #ctrl-left { gap: 10px; }
   .ctrl-row { gap: 8px; }

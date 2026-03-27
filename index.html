@@ -33,6 +33,10 @@
           <div class="panel-label">LINES</div>
           <div class="panel-value" id="lines" data-testid="lines">0</div>
         </div>
+        <div class="panel-box" id="hold-box">
+          <div class="panel-label">HOLD</div>
+          <canvas id="hold-canvas" width="80" height="80"></canvas>
+        </div>
         <div class="panel-box" id="next-box">
           <div class="panel-label">NEXT</div>
           <canvas id="next-canvas" width="120" height="120"></canvas>
@@ -57,6 +61,9 @@
     <!-- Mobile Controls: left=movement / right=rotate+drop -->
     <div id="mobile-controls" data-testid="controls">
       <div id="ctrl-left">
+        <div class="ctrl-row">
+          <button id="btn-hold" class="game-btn hold-btn" aria-label="Hold (C)">C<span class="btn-label">HOLD</span></button>
+        </div>
         <div class="ctrl-row">
           <button id="btn-left"  class="game-btn" aria-label="Left">◀</button>
           <button id="btn-right" class="game-btn" aria-label="Right">▶</button>
