@@ -138,6 +138,15 @@ class Board {
     }
   }
 
+  // アニメーション用：消去対象の行インデックスを返す（盤面は変更しない）
+  findFullRows() {
+    const rows = [];
+    for (let r = 0; r < ROWS + HIDDEN_ROWS; r++) {
+      if (this.grid[r].every(cell => cell !== null)) rows.push(r);
+    }
+    return rows;
+  }
+
   clearLines() {
     let cleared = 0;
     for (let r = ROWS + HIDDEN_ROWS - 1; r >= 0; r--) {
@@ -227,7 +236,7 @@ class Renderer {
     ctx.strokeRect(x + 0.5, y + 0.5, size - 1, size - 1);
   }
 
-  drawBoard(board, piece) {
+  drawBoard(board, piece, flashRows = []) {
     const ctx = this.ctx;
     const cs = this.cellSize;
     const visibleRows = ROWS;
@@ -260,6 +269,16 @@ class Renderer {
         if (color) {
           this._drawCell(ctx, c * cs, r * cs, cs, color);
         }
+      }
+    }
+
+    // ライン消去フラッシュ：満杯行を白く塗り潰して演出
+    if (flashRows.length > 0) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.86)';
+      for (const r of flashRows) {
+        const visR = r - offset;
+        if (visR < 0 || visR >= visibleRows) continue;
+        ctx.fillRect(0, visR * cs, COLS * cs, cs);
       }
     }
 
@@ -351,6 +370,8 @@ class Game {
     this._lockDelay = 0;
     this._lockDelayMax = 500;
     this._isOnGround = false;
+    this._flashRows  = [];   // 現在フラッシュ中の行インデックス
+    this._flashToken = 0;    // リスタート時に setTimeout をキャンセルするためのトークン
 
     this._initDOM();
     this._initRenderer();
@@ -522,6 +543,8 @@ class Game {
 
   // ---- Game lifecycle ----
   start() {
+    this._flashToken++;   // 前のゲームで保留中の setTimeout があればキャンセル
+    this._flashRows = [];
     this.board.reset();
     this.score = 0; this.level = 1; this.lines = 0;
     this._updateHUD();
@@ -681,16 +704,37 @@ class Game {
   _lock() {
     if (!this.piece) return;
     this.board.lock(this.piece);
-    const cleared = this.board.clearLines();
-    if (cleared > 0) {
-      this.lines += cleared;
-      this.score += LINE_SCORES[cleared] * this.level;
+    this.piece = null; // ピースを消費（ループ・入力操作は自然にブロックされる）
+
+    const fullRows = this.board.findFullRows();
+    if (fullRows.length > 0) {
+      // フェーズ1: 満杯行をフラッシュ表示（160ms）
+      const token = ++this._flashToken;
+      this._flashRows = fullRows;
+      this._render(); // フラッシュ開始フレームを即描画
+      setTimeout(() => {
+        if (this._flashToken !== token) return; // リスタートでキャンセル済み
+        this._finalizeClear(fullRows.length);   // フェーズ2: 実際に消去・スポーン
+      }, 160);
+    } else {
+      this._finalizeClear(0); // 消去なし → 即スポーン
+    }
+  }
+
+  // ライン消去の確定処理（フラッシュ後、またはフラッシュなし時に呼ばれる）
+  _finalizeClear(count) {
+    this._flashRows = [];
+    if (count > 0) {
+      this.board.clearLines();
+      this.lines += count;
+      this.score += LINE_SCORES[count] * this.level;
       this.level = Math.floor(this.lines / 10) + 1;
       this._updateHUD();
     }
-    this.piece = null;
-    if (this.state === 'playing') {
+    // playing/paused どちらでも次のピースをスポーン（paused中はループが止まるだけ）
+    if (this.state === 'playing' || this.state === 'paused') {
       this._spawnPiece();
+      this._lastDrop = performance.now(); // フラッシュ時間分の経過をリセット → 即落下防止
     }
     this._render();
   }
@@ -752,7 +796,7 @@ class Game {
 
   // ---- Render ----
   _render() {
-    this.renderer.drawBoard(this.board, this.piece);
+    this.renderer.drawBoard(this.board, this.piece, this._flashRows);
   }
 }
 
